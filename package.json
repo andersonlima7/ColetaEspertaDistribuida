@@ -3,8 +3,18 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
     "@types/node": "^18.0.3",
+    "axios": "^0.27.2",
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
     "ts-node": "^10.8.2",
     "ts-node-dev": "^2.0.0"
+  },
+  "scripts": {
+    "estacoes": "ts-node src/estacoes",
+    "lixeira": "ts-node src/lixeira"
   }
 }
