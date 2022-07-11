@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getAllEstacoes } from "./static/estacoes";
 
 export interface Lixeira {
   id: string;
@@ -10,7 +11,8 @@ export interface Lixeira {
   estacao: string;
 }
 
-let estacoes = ["E1", "E2", "E3"];
+const estacoes = getAllEstacoes(); //Estações disponíveis
+const estacao = estacoes[Math.floor(Math.random() * estacoes.length)]; //Escolhe uma randomicamente
 
 const lixeira: Lixeira = {
   id: Date.now().toString(36), //Gera um ID único
@@ -19,10 +21,10 @@ const lixeira: Lixeira = {
   quantidadeLixoAtual: 0.0,
   quantidadeLixoMaxima: 100.0,
   ocupacaoAtual: 0.0,
-  estacao: estacoes[Math.floor(Math.random() * estacoes.length)],
+  estacao: estacao.nome,
 };
 
-axios.defaults.baseURL = `http://localhost:400${lixeira.estacao.charAt(1)}`;
+axios.defaults.baseURL = `http://localhost:${estacao.porta}`;
 
 console.log(axios.defaults.baseURL);
 const iniciar = () => {

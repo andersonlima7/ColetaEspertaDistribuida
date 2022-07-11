@@ -4,6 +4,11 @@ import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 
+export interface estacao {
+  nome: string;
+  porta: number;
+}
+
 export const estacao = (host: string, porta: number) => {
   // Porta do servidor
   const PORT = porta;

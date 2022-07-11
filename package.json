@@ -15,6 +15,7 @@
   },
   "scripts": {
     "estacoes": "ts-node src/estacoes",
+    "caminhoes": "ts-node src/caminhoes",
     "lixeira": "ts-node src/lixeira"
   }
 }
