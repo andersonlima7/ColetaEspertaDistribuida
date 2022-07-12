@@ -14,8 +14,8 @@
     "ts-node-dev": "^2.0.0"
   },
   "scripts": {
-    "estacoes": "ts-node src/estacoes",
-    "caminhoes": "ts-node src/caminhoes",
+    "estacoes": "ts-node src/scripts/estacoes",
+    "caminhoes": "ts-node src/scripts/caminhoes",
     "lixeira": "ts-node src/lixeira"
   }
 }
