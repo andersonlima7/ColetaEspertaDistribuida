@@ -15,6 +15,7 @@
   },
   "scripts": {
     "estacoes": "ts-node src/scripts/estacoes",
+    "dev": "ts-node src/server/server",
     "caminhoes": "ts-node src/scripts/caminhoes",
     "lixeira": "ts-node src/lixeira"
   }

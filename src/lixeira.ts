@@ -69,9 +69,7 @@ setInterval(() => {
   if (novaQuantidadeLixo > lixeira.quantidadeLixoMaxima) {
     console.log("A quantidade ultrapassa a capacidade máxima da lixeira");
   } else {
-    console.log(
-      `Lixeira ${lixeira.id} adicionando ${quantidade} m³ de quantidadeLixoAtual...`
-    );
+    console.log(`Lixeira ${lixeira.id} adicionando ${quantidade} m³ de lixo..`);
     adicionarquantidadeLixoAtual(quantidade);
   }
 }, 10 * 1000);

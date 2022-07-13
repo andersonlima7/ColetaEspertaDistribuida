@@ -20,3 +20,11 @@ export const getAllEstacoes = () => {
   estacoes.push(estacao3);
   return estacoes;
 };
+
+export const getAllPortas = () => {
+  let portas = [];
+  portas.push(estacao1.porta);
+  portas.push(estacao2.porta);
+  portas.push(estacao3.porta);
+  return portas;
+};

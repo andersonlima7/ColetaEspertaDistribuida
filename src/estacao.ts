@@ -3,7 +3,7 @@ import { Lixeira } from "./lixeira";
 import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
-import { desc } from "./server/server"; //Ordena as lixeiras
+import { desc } from "./functions/ordenar"; //Ordena as lixeiras
 import axios from "axios";
 
 /**
@@ -54,37 +54,42 @@ export const estacao = (host: string, porta: number) => {
     quantidadeLixoAtual: 0,
     quantidadeLixoMaxima: 100,
     ocupacaoAtual: 0,
-    estacao: "E1",
+    estacao: host,
   });
 
   axios.defaults.baseURL = "http://localhost:4000";
-  const requisitarNLixeiras = (quantidade: number) => {
-    axios.get(`/Lixeiras=${quantidade}/${host}`).then(
+
+  // Rotas
+  app.get("/Lixeiras=:qtd", (req, res) => {
+    const numeroLixeiras: number = +req.params.qtd; //Número de lixeiras que o caminhão solicitou ver.
+    let lixeirasCriticas: Lixeira[] = [];
+    console.log(`Caminhão solicitou`);
+    axios.get(`/Lixeiras=${numeroLixeiras}/${host}`).then(
+      //Requisita as lixeiras críticas das outras estações
       (response) => {
         console.log(response.status);
         console.log(response.statusText);
-        return response.data;
+
+        lixeirasCriticas = lixeirasCriticas
+          .concat(response.data) // Lixeiras críticas de outras estações.
+          .concat(lixeiras); // Lixeiras dessa estação.
+        lixeirasCriticas.sort(desc);
+        lixeirasCriticas = lixeirasCriticas.slice(0, numeroLixeiras);
+
+        console.log(lixeirasCriticas);
+        res.json(lixeirasCriticas);
       },
       (error) => {
         console.log(error);
       }
     );
-  };
-
-  // Rotas
-  app.get("/Lixeiras=:qtd", (req, res) => {
-    const numeroLixeiras: number = +req.params.qtd;
-    lixeiras.sort(desc);
-    lixeiras = lixeiras.slice(0, numeroLixeiras);
-    res.send(lixeiras);
   });
 
-  app.get("/Lixeiras/:qtd", (req, res) => {
+  app.get("/Lixeiras=:qtd/server", (req, res) => {
     const numeroLixeiras: number = +req.params.qtd;
+    console.log(`Servidor solicitou`);
     lixeiras.sort(desc);
     lixeiras = lixeiras.slice(0, numeroLixeiras);
-
-    axios.get("http://localhost:4000/");
     res.send(lixeiras);
   });
 
@@ -121,7 +126,7 @@ export const estacao = (host: string, porta: number) => {
         lixeiras[i] = editarLixeira;
         res.send("Lixeira editada");
         console.log(
-          `Lixeira ${id} agora possui ${editarLixeira.quantidadeLixoAtual} de lixo...`
+          `Lixeira ${id} agora possui ${editarLixeira.quantidadeLixoAtual}m³ de lixo...`
         );
       }
     }

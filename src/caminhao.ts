@@ -1,5 +1,6 @@
 import axios from "axios";
 import { estacao } from "./estacao";
+import { Lixeira } from "./lixeira";
 
 /**
  * 
@@ -17,18 +18,21 @@ export const caminhao = (estacao: estacao) => {
   let relogioLogico = 0; //Será enviado para a estação e a estação envia para as outras.
   axios.defaults.baseURL = `http://localhost:${estacao.porta}`;
 
-  const verLixeixas = () => {
-    axios.get(`/lixeiras`).then(
+  const verLixeiras = (quantidade: number) => {
+    let lixeiras: Lixeira;
+    const response = axios.get(`/lixeiras=${quantidade}`).then(
       (response) => {
         console.log(response.status);
         console.log(response.statusText);
-        return response.data;
+        lixeiras = response.data;
+        console.log(lixeiras);
+        return lixeiras;
       },
       (error) => {
         console.log(error);
       }
     );
+    return response;
   };
-
-  const todasLixeiras = verLixeixas();
+  verLixeiras(2);
 };
