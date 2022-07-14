@@ -50,24 +50,23 @@ export const caminhao = (estacao: estacao, id: string) => {
     return idsLixeiras;
   };
 
-    // Metodo responsavel por enviar requisicao de Lixeira para a estacao
-  const enviarRota = async() => {
+  // Metodo responsavel por enviar requisicao de Lixeira para a estacao
+  const enviarRota = async () => {
     const rota = await escolherRota();
     // Envia a rota de lixeiras para serem reservadas
-    const resposta = axios.get(`/reservarRota/${JSON.stringify(rota)}/${id}`).then((res) =>{
-      return res.data;
-    });
+    const resposta = axios
+      .get(`/reservarRota/${JSON.stringify(rota)}/${id}`)
+      .then((res) => {
+        return res.data;
+      });
     // Exibe se a rota foi reservada ou não
     console.log(resposta);
-  }
+  };
 
   /**
    * Metodo responsavel por coletar o lixo das lixeiras da rota
    * E informar liberação do espaço crítico
    * @param rota M
    */
-  function coletarLixeirasRota(rota: Lixeira[]){
-
-  }
-
+  function coletarLixeirasRota(rota: Lixeira[]) {}
 };
