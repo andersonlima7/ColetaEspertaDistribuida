@@ -64,7 +64,7 @@ function adicionarquantidadeLixoAtual(quantidade: number) {
 /** Automatização - a cada 5s uma quantidade de quantidadeLixoAtual é adicionada*/
 
 setInterval(() => {
-  const quantidade = Math.trunc(Math.random() * (10 - 1));
+  const quantidade = Math.trunc(Math.random() * (10 - 1) + 1);
   const novaQuantidadeLixo = lixeira.quantidadeLixoAtual + quantidade;
   if (novaQuantidadeLixo > lixeira.quantidadeLixoMaxima) {
     console.log("A quantidade ultrapassa a capacidade máxima da lixeira");

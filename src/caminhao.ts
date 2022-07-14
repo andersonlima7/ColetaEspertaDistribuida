@@ -14,25 +14,41 @@ Os relógios de Lamport obedecem as seguintes regras:
 
  */
 
-export const caminhao = (estacao: estacao) => {
+export const caminhao = (estacao: estacao, id: string) => {
   let relogioLogico = 0; //Será enviado para a estação e a estação envia para as outras.
+
+  const numLixeiras = 10; //N lixeiras que o caminhão consulta.
+  const numLixeirasRota = 5; // Nº de lixeiras que o caminhão irá querer reservar pra sua rota.
+  let lixeiras: Lixeira[] = [];
+
   axios.defaults.baseURL = `http://localhost:${estacao.porta}`;
 
-  const verLixeiras = (quantidade: number) => {
-    let lixeiras: Lixeira;
-    const response = axios.get(`/lixeiras=${quantidade}`).then(
-      (response) => {
-        console.log(response.status);
-        console.log(response.statusText);
-        lixeiras = response.data;
-        console.log(lixeiras);
-        return lixeiras;
-      },
-      (error) => {
-        console.log(error);
-      }
-    );
-    return response;
+  const verLixeiras = async (quantidade: number) => {
+    lixeiras = await axios.get(`/lixeiras=${quantidade}`).then((res) => {
+      return res.data;
+    });
+    console.log(lixeiras);
+
+    return lixeiras;
   };
-  verLixeiras(2);
+
+  const escolherRota = async () => {
+    const idsLixeiras: string[] = [];
+    let lixeirasRota = await verLixeiras(numLixeiras); //Consulta 10 lixeiras mais críticas
+    lixeirasRota = lixeirasRota
+      .sort(() => Math.random() - Math.random())
+      .slice(0, numLixeirasRota); // Escolhe 5 das 10.
+
+    for (let i = 0; i < lixeirasRota.length; i++) {
+      let lixeiraSelecionada = lixeirasRota[i];
+      console.log(
+        `Caminhão ${id} escolheu a lixeira ${lixeiraSelecionada.id} para sua rota.`
+      );
+      idsLixeiras.push(lixeiraSelecionada.id);
+    }
+    console.log("Rota escolhida", idsLixeiras);
+    return idsLixeiras;
+  };
+
+  escolherRota();
 };

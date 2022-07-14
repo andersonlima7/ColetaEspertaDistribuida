@@ -25,7 +25,7 @@ const app = express();
 
 // Endpoint raiz
 app.get("/", (req, res) => {
-  res.send(`Bem-vindo ao Servidor N Críticas`);
+  res.send(`Bem-vindo ao Servidor N lixeiras críticas`);
 });
 
 // Cors

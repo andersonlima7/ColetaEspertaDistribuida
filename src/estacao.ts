@@ -5,6 +5,11 @@ import express from "express";
 import cors from "cors";
 import { desc } from "./functions/ordenar"; //Ordena as lixeiras
 import axios from "axios";
+import {
+  lixeirasTestesE1,
+  lixeirasTestesE2,
+  lixeirasTestesE3,
+} from "./static/lixeirasTeste";
 
 /**
 Quando um processo quer entrar na região crítica, ele cria uma mensagem contendo o nome da região crítica, o número de seu processo e valor de seu contador. E então envia essa mensagem para todos os outros processos participantes do sistema. Para isso assume-se que o envio das mensagens é confiável.
@@ -47,17 +52,20 @@ export const estacao = (host: string, porta: number) => {
 
   let lixeiras: Lixeira[] = [];
 
-  lixeiras.push({
-    id: "teste",
-    longitude: 10.0,
-    latitude: 10.0,
-    quantidadeLixoAtual: 0,
-    quantidadeLixoMaxima: 100,
-    ocupacaoAtual: 0,
-    estacao: host,
-  });
+  //APENAS para testes. Lembrar de remover depois.
+  switch (host) {
+    case "E1":
+      lixeiras = lixeiras.concat(lixeirasTestesE1);
+      break;
+    case "E2":
+      lixeiras = lixeiras.concat(lixeirasTestesE2);
+      break;
+    case "E3":
+      lixeiras = lixeiras.concat(lixeirasTestesE3);
+      break;
+  }
 
-  axios.defaults.baseURL = "http://localhost:4000";
+  axios.defaults.baseURL = "http://localhost:4000"; //Url do servidor que calcula as N mais críticas
 
   // Rotas
   app.get("/Lixeiras=:qtd", (req, res) => {
@@ -76,7 +84,7 @@ export const estacao = (host: string, porta: number) => {
         lixeirasCriticas.sort(desc);
         lixeirasCriticas = lixeirasCriticas.slice(0, numeroLixeiras);
 
-        console.log(lixeirasCriticas);
+        // console.log(lixeirasCriticas);
         res.json(lixeirasCriticas);
       },
       (error) => {
