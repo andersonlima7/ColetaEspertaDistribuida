@@ -21,6 +21,15 @@ export const getAllEstacoes = () => {
   return estacoes;
 };
 
+export const getAllEstacoesUnless = (estacao: string) => {
+  const estacoes: estacao[] = getAllEstacoes();
+  const outrasEstacoes: estacao[] = [];
+  for (let i = 0; i < estacoes.length; i++) {
+    if (estacoes[i].nome !== estacao) outrasEstacoes.push(estacoes[i]);
+  }
+  return outrasEstacoes;
+};
+
 export const getAllPortas = () => {
   let portas = [];
   portas.push(estacao1.porta);

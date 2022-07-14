@@ -10,6 +10,7 @@ import {
   lixeirasTestesE2,
   lixeirasTestesE3,
 } from "./static/lixeirasTeste";
+import { getAllEstacoesUnless } from "./static/estacoes";
 
 /**
 Quando um processo quer entrar na região crítica, ele cria uma mensagem contendo o nome da região crítica, o número de seu processo e valor de seu contador. E então envia essa mensagem para todos os outros processos participantes do sistema. Para isso assume-se que o envio das mensagens é confiável.
@@ -65,31 +66,32 @@ export const estacao = (host: string, porta: number) => {
       break;
   }
 
-  axios.defaults.baseURL = "http://localhost:4000"; //Url do servidor que calcula as N mais críticas
-
   // Rotas
   app.get("/Lixeiras=:qtd", (req, res) => {
     const numeroLixeiras: number = +req.params.qtd; //Número de lixeiras que o caminhão solicitou ver.
     let lixeirasCriticas: Lixeira[] = [];
-    console.log(`Caminhão solicitou`);
-    axios.get(`/Lixeiras=${numeroLixeiras}/${host}`).then(
-      //Requisita as lixeiras críticas das outras estações
-      (response) => {
-        console.log(response.status);
-        console.log(response.statusText);
 
-        lixeirasCriticas = lixeirasCriticas
-          .concat(response.data) // Lixeiras críticas de outras estações.
-          .concat(lixeiras); // Lixeiras dessa estação.
+    const requisicoes: string[] = []; //Array dos requests que devem ser feitos.
+    const outrasEstacoes: estacao[] = getAllEstacoesUnless(host); // Array com as outras estações.
+
+    for (let i = 0; i < outrasEstacoes.length; i++) {
+      requisicoes.push(
+        `http://localhost:${outrasEstacoes[i].porta}/Lixeiras=${numeroLixeiras}/server`
+      );
+    }
+
+    axios.all(requisicoes.map((request) => axios.get(request))).then(
+      axios.spread((...response) => {
+        for (let i = 0; i < response.length; i++) {
+          lixeirasCriticas = lixeirasCriticas.concat(response[i].data); // Lixeiras críticas de outras estações.
+          console.log(response[i].data);
+        }
+        lixeirasCriticas = lixeirasCriticas.concat(lixeiras); // Lixeiras dessa estação.
         lixeirasCriticas.sort(desc);
         lixeirasCriticas = lixeirasCriticas.slice(0, numeroLixeiras);
-
-        // console.log(lixeirasCriticas);
+        console.log("Lixeiras", lixeirasCriticas);
         res.json(lixeirasCriticas);
-      },
-      (error) => {
-        console.log(error);
-      }
+      })
     );
   });
 
