@@ -9,6 +9,7 @@ export interface Lixeira {
   quantidadeLixoMaxima: number;
   ocupacaoAtual: number; // dado em porcentagem (%)
   estacao: string;
+  idCaminhao?: string; 
 }
 
 const estacoes = getAllEstacoes(); //Estações disponíveis
