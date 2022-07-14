@@ -9,13 +9,13 @@ export interface Lixeira {
   quantidadeLixoMaxima: number;
   ocupacaoAtual: number; // dado em porcentagem (%)
   estacao: string;
-  idCaminhao?: string; 
+  idCaminhao?: string;
 }
 
 const estacoes = getAllEstacoes(); //Estações disponíveis
 const estacao = estacoes[Math.floor(Math.random() * estacoes.length)]; //Escolhe uma randomicamente
 
-const lixeira: Lixeira = {
+let lixeira: Lixeira = {
   id: Date.now().toString(36), //Gera um ID único
   longitude: 0.0,
   latitude: 0.0,
@@ -41,7 +41,25 @@ const iniciar = () => {
 
 iniciar();
 
+function deveEsvaziar() {
+  axios.get(`/Lixeiras/${lixeira.id}/esvaziar`).then(
+    (response) => {
+      // console.log("Deve esvaziar?", response.status);
+      if (response.data === true) {
+        lixeira.quantidadeLixoAtual = 0;
+        lixeira.ocupacaoAtual = 0;
+      } else {
+        console.log(`Teste`);
+      }
+    },
+    (error) => {
+      console.log(error);
+    }
+  );
+}
+
 function enviarDados() {
+  deveEsvaziar();
   axios.put(`/Lixeiras/${lixeira.id}`, lixeira).then(
     (response) => {
       console.log("Status Code:", response.status);
@@ -65,7 +83,7 @@ function adicionarquantidadeLixoAtual(quantidade: number) {
 /** Automatização - a cada 5s uma quantidade de quantidadeLixoAtual é adicionada*/
 
 setInterval(() => {
-  const quantidade = Math.trunc(Math.random() * (10 - 1) + 1);
+  const quantidade = Math.trunc(Math.random() * (10 - 1)) + 1;
   const novaQuantidadeLixo = lixeira.quantidadeLixoAtual + quantidade;
   if (novaQuantidadeLixo > lixeira.quantidadeLixoMaxima) {
     console.log("A quantidade ultrapassa a capacidade máxima da lixeira");

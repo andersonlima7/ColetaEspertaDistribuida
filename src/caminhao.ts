@@ -54,15 +54,22 @@ export const caminhao = (estacao: estacao, id: string) => {
   const enviarRota = async () => {
     const rota = await escolherRota();
     // Envia a rota de lixeiras para serem reservadas
-    const resposta = axios
-      .get(`/reservarRota/${JSON.stringify(rota)}/${id}`)
+    const resposta = await axios
+      .post(`/reservarRota/${id}`, { rota: rota })
       .then((res) => {
         return res.data;
       });
-    // Exibe se a rota foi reservada ou não
-    console.log(resposta);
+    if (resposta.length > 0) {
+      console.log(
+        `Não foi possível reservar a rota. \n Lixeiras já ocupadas: `,
+        resposta
+      );
+    } else {
+      console.log(`Rota reservada com sucesso!`);
+    }
   };
 
+  enviarRota();
   /**
    * Metodo responsavel por coletar o lixo das lixeiras da rota
    * E informar liberação do espaço crítico

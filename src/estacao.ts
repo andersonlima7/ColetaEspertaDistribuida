@@ -43,6 +43,9 @@ export const estacao = (host: string, porta: number) => {
   // Lixeiras que a estação quer reservar
   let lixeirasParaReserva: string[] = [];
 
+  // Lixeiras que devem ser esvaziadas
+  let lixeirasParaEsvaziar: string[] = [];
+
   // Endpoint raiz
   app.get("/", (req, res) => {
     res.send(`Bem-vindo a estação ${host}`);
@@ -73,8 +76,15 @@ export const estacao = (host: string, porta: number) => {
       break;
   }
 
+  // Atualiza o relógio lógico sempre que um evento acontecer
+  const atualizarRelogio = () => {
+    relogio[PORT - 4001] += 1;
+    console.log(`Relógio atualizado: ${relogio}`);
+  };
+
   // Rotas
   app.get("/Lixeiras=:qtd", (req, res) => {
+    atualizarRelogio();
     const numeroLixeiras: number = +req.params.qtd; //Número de lixeiras que o caminhão solicitou ver.
     let lixeirasCriticas: Lixeira[] = [];
 
@@ -102,8 +112,17 @@ export const estacao = (host: string, porta: number) => {
     );
   });
 
+  app.get("/Lixeiras=:qtd/server", (req, res) => {
+    const numeroLixeiras: number = +req.params.qtd;
+    console.log(`Servidor solicitou`);
+    lixeiras.sort(desc);
+    lixeiras = lixeiras.slice(0, numeroLixeiras);
+    res.send(lixeiras);
+  });
+
   //
   app.get("/Lixeiras/:id", (req, res) => {
+    atualizarRelogio();
     const id = req.params.id;
     console.log(id);
     lixeiras.forEach((lixeira: Lixeira) => {
@@ -112,10 +131,22 @@ export const estacao = (host: string, porta: number) => {
         return true;
       }
     });
-    res.sendStatus(404);
+    res.status(404);
+  });
+
+  app.get("/Lixeiras/:id/esvaziar", (req, res) => {
+    const id = req.params.id;
+    console.log(id);
+    if (id in lixeirasParaEsvaziar) {
+      lixeirasParaEsvaziar = lixeirasParaEsvaziar.filter((e) => e !== id);
+      res.send(true);
+    } else {
+      res.send(false);
+    }
   });
 
   app.post("/Lixeiras", (req, res) => {
+    atualizarRelogio();
     const novaLixeira: Lixeira = req.body;
     console.log(`Nova lixeira`);
     console.log(novaLixeira);
@@ -124,10 +155,12 @@ export const estacao = (host: string, porta: number) => {
   });
 
   app.get("/Lixeiras", (req, res) => {
+    atualizarRelogio();
     res.json(lixeiras);
   });
 
   app.put("/Lixeiras/:id", (req, res) => {
+    atualizarRelogio();
     const id = req.params.id;
     const editarLixeira: Lixeira = req.body;
     for (let i = 0; i < lixeiras.length; i++) {
@@ -143,6 +176,7 @@ export const estacao = (host: string, porta: number) => {
   });
 
   app.delete("/Lixeiras/:id", (req, res) => {
+    atualizarRelogio();
     const id = req.params.id;
     let status = 404;
 
@@ -159,7 +193,7 @@ export const estacao = (host: string, porta: number) => {
     }
   });
 
-  // Realiza a reserva das lixeiras de uma rota.
+  // Realiza a reserva das lixeiras de uma rota. Recebe uma rota a reservada.
   app.post("/reservarLixeira/:host", (req, res) => {
     // Sincronização do relogio local com externo
     let relogio_externo: number[] = req.body.relogio;
@@ -173,7 +207,7 @@ export const estacao = (host: string, porta: number) => {
     const rotaReservada = reservas.some((r) => rota.indexOf(r) >= 0); //True se a rota possui alguma lixeira reservada
     if (rotaReservada) {
       lixeirasReservadas = reservas.filter((element) => rota.includes(element));
-      res.status(400).send(lixeirasReservadas);
+      res.send(lixeirasReservadas);
     } else {
       const disputa = lixeirasParaReserva.some((r) => rota.indexOf(r) >= 0); // True se as duas estações querem alguma lixeira em comum.
       if (disputa) {
@@ -186,17 +220,18 @@ export const estacao = (host: string, porta: number) => {
             rota.includes(element)
           );
           lixeirasParaReserva = [];
-          res.status(400).send(lixeirasReservadas);
+          res.send(lixeirasReservadas);
           // Condicao 2.3
         } else {
           //A estação que pediu a rota ganha a disputa.
-          res.status(200).send([]); //Array vazio = nenhuma lixeira que ele quis foi reservada por outros.
+          res.send([]); //Array vazio = nenhuma lixeira que ele quis foi reservada por outros.
         }
       } else {
         //2.1 - Esta estação NÃO quer as lixeiras da rota, então responde com OK!
-        res.status(200).send([]);
+        res.send([]);
       }
     }
+    console.log(`Lixeiras reservadas ${reservas}`);
     relogio[PORT - 4001] =
       Math.max(relogio[porta - 4001], relogio_externo[porta - 4001]) + 1; //Atualiza seu relógio lógico
   });
@@ -204,14 +239,14 @@ export const estacao = (host: string, porta: number) => {
   // Caminhao solicita reserva de rota
   /*    
     1. Estação recebe a requisição do caminhão
-    2. Realiza o pedido de reserva das lixeiras as estações
-      2.1. Se a estacao nao possui caminhao em uma dada lixeira nem possui rota para requisitar a lixeira, entao devolve OK!
-      2.2. Se o caminhao de uma dada estacao estiver com uma lixeira reservada entao responde que a lixeira já está reservada!
-      2.3  Se a estacao nao possui um caminhao em uma dada lixeira mas possui uma rota que requisita uma dada lixeira entao ele compara a marca temporal da mensagem recebida com a marca temporal da mensagem que ele enviou para todos. Se a mensagem recebida tiver a menor marca temporal, o processo responde com um OK, caso contrário, ele informa que ja foi ocupado.
+    2. Realiza o pedido de reservar as lixeiras para as demais estações
+      2.1. Se as demais estações não estão com essas lixeiras reservadas e não querem reservar elas, elas respondem com um OK (200).
+      2.2. Se as demais estações estão com as lixeiras reservadas, elas respondem que não é possível reservar mais aquelas lixeiras (400). O caminhão deve refazer sua rota.
+      2.3  Se as demais estações não estão com as lixeiras reservadas, mas também querem reservar, a estação que recebeu a mensagem compara a marca temporal recebida com a sua própria marca temporal. Se a mensagem recebida tiver a menor marca temporal, o processo responde com um OK (200), caso contrário, essa estação ganha a disputa pela rota e avisa a estação enviando uma mensagem (400).
   */
-  app.get("/reservarRota/:rota/:id", async (req, res) => {
-    const rota: string[] = JSON.parse(req.params.rota);
-
+  app.post("/reservarRota/:id", async (req, res) => {
+    atualizarRelogio();
+    const rota: string[] = req.body.rota;
     lixeirasParaReserva.concat(rota); // Adiciona os IDs das lixeiras na lista de lixeiras que se quer reservar
 
     //Verifica com as outras estações a disponibilidade das lixeiras da rota.
@@ -222,28 +257,13 @@ export const estacao = (host: string, porta: number) => {
     if (lixeirasReservadas.length > 0) {
       //Alguma estação já está com a lixeira reservada ou ganhou a disputa contra essa.
       lixeirasParaReserva = [];
-      res.status(400).send(lixeirasReservadas); //Retorna as lixeiras reservadas.
+      res.send(lixeirasReservadas); //Retorna as lixeiras reservadas.
     } else {
       // Caso nenhuma nenhuma lixera esteja reservada.
       reservas = reservas.concat(lixeirasParaReserva); // Agora as lixeiras estão reservadas.
       lixeirasParaReserva = []; // Não se quer reservar mais.
-      res.sendStatus(200); // Ok caminhão, pode usar!
+      res.send([]); // Ok caminhão, pode usar!
     }
-  });
-
-  //Esvaziar - Liberar lixeiras
-  app.put("/Lixeiras/:id", (req, res) => {
-    const id = req.params.id;
-    for (let i = 0; i < lixeiras.length; i++) {
-      //Esvazia no server
-      let lixeira = lixeiras[i];
-      if (lixeira.id === id) {
-        lixeiras[i].quantidadeLixoAtual = 0;
-        res.send(`Lixeira ${lixeiras[i].id} esvaziada`);
-        console.log(`Lixeira ${lixeiras[i].id} esvaziada`);
-      }
-    }
-    reservas = reservas.filter((e) => e !== id); // Elimina o ID da lista de ids reservados.
   });
 
   // Função que solicita a reserva de uma rota para as demais estações
@@ -271,12 +291,31 @@ export const estacao = (host: string, porta: number) => {
             console.log(response[i].status);
             console.log(response[i].data);
           }
+          console.log(`Respostas ${respostas}`);
           return respostas;
         })
       );
 
     return resposta;
   }
+
+  //Esvaziar - Liberar lixeiras
+  app.put("/Lixeiras/:id", (req, res) => {
+    atualizarRelogio();
+    const id = req.params.id;
+    for (let i = 0; i < lixeiras.length; i++) {
+      //Esvazia no server
+      let lixeira = lixeiras[i];
+      if (lixeira.id === id) {
+        lixeiras[i].quantidadeLixoAtual = 0;
+        lixeiras[i].ocupacaoAtual = 0;
+        lixeirasParaEsvaziar.push(lixeiras[i].id);
+        res.send(`Lixeira ${lixeiras[i].id} esvaziada`);
+        console.log(`Lixeira ${lixeiras[i].id} esvaziada`);
+      }
+    }
+    reservas = reservas.filter((e) => e !== id); // Elimina o ID da lista de ids reservados.
+  });
 
   // Inicia o sevidor
   app.listen(PORT, () => {
