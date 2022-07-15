@@ -59,7 +59,7 @@ function deveEsvaziar() {
 }
 
 function enviarDados() {
-  deveEsvaziar();
+  //deveEsvaziar();
   axios.put(`/Lixeiras/${lixeira.id}`, lixeira).then(
     (response) => {
       console.log("Status Code:", response.status);

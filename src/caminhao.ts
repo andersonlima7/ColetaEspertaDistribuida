@@ -66,6 +66,7 @@ export const caminhao = (estacao: estacao, id: string) => {
       );
     } else {
       console.log(`Rota reservada com sucesso!`);
+      console.log(resposta.data);
     }
   };
 

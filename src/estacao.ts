@@ -64,7 +64,7 @@ export const estacao = (host: string, porta: number) => {
   let lixeiras: Lixeira[] = [];
 
   //APENAS para testes. Lembrar de remover depois.
-  switch (host) {
+  /*switch (host) {
     case "E1":
       lixeiras = lixeiras.concat(lixeirasTestesE1);
       break;
@@ -74,7 +74,7 @@ export const estacao = (host: string, porta: number) => {
     case "E3":
       lixeiras = lixeiras.concat(lixeirasTestesE3);
       break;
-  }
+  }*/
 
   // Atualiza o relógio lógico sempre que um evento acontecer
   const atualizarRelogio = () => {
@@ -194,46 +194,58 @@ export const estacao = (host: string, porta: number) => {
   });
 
   // Realiza a reserva das lixeiras de uma rota. Recebe uma rota a reservada.
-  app.post("/reservarLixeira/:host", (req, res) => {
+  app.post("/reservarLixeira/:host", (req, res) => {      
     // Sincronização do relogio local com externo
-    let relogio_externo: number[] = req.body.relogio;
-    const rota: string[] = req.body.rota;
+    let relogio_externo: number[] = req.body.relogio;    
     const portaEstacao: number = req.body.porta;
-    console.log(relogio_externo);
-    let lixeirasReservadas: string[] = [];
+    console.log(relogio_externo);    
 
+    // Filtra a rota para ter apenas as lixeiras dessa estação
+    const rota: string[] = [];
+    const convert : string[] = req.body.rota;    
+    req.body.rota.forEach(function(id_lixeira : string){
+        lixeiras.forEach(function(lixeira){
+            if(id_lixeira == lixeira.id)
+              rota.push(lixeira.id);
+        });
+    });
+             
     // Verificação da disponibilidade da Lixeira
     //2.2 Se essa estação já está com as lixeiras.
     const rotaReservada = reservas.some((r) => rota.indexOf(r) >= 0); //True se a rota possui alguma lixeira reservada
-    if (rotaReservada) {
-      lixeirasReservadas = reservas.filter((element) => rota.includes(element));
-      res.send(lixeirasReservadas);
-    } else {
+    
+    if (rotaReservada || rota.length == 0) {
+      //lixeirasReservadas = reservas.filter((element) => rota.includes(element));
+      res.send([]);
+    } else {            
       const disputa = lixeirasParaReserva.some((r) => rota.indexOf(r) >= 0); // True se as duas estações querem alguma lixeira em comum.
       if (disputa) {
         //2.3 Se essa estação não está com as lixeiras ainda, mas pretende acessar.
         if (
           relogio[PORT - 4001] < relogio[portaEstacao - 4001] //Se esta estação tem prioridade, ela consegue a rota.
-        ) {
-          reservas.concat(rota);
-          lixeirasReservadas = reservas.filter((element) =>
-            rota.includes(element)
-          );
-          lixeirasParaReserva = [];
-          res.send(lixeirasReservadas);
+          ) {
+            reservas = reservas.concat(rota);          
+            lixeirasParaReserva = lixeirasParaReserva.filter((element) => element in rota)
+            res.send(rota);
           // Condicao 2.3
         } else {
-          //A estação que pediu a rota ganha a disputa.
+          //A estação que pediu a rota ganha a disputa.          
           res.send([]); //Array vazio = nenhuma lixeira que ele quis foi reservada por outros.
         }
       } else {
         //2.1 - Esta estação NÃO quer as lixeiras da rota, então responde com OK!
-        res.send([]);
+        let respostaReserva: string[] = [];
+        rota.forEach(function(lixeiraRota){
+          if(!(lixeiraRota in reservas) && !(lixeiraRota in lixeirasParaReserva))
+            respostaReserva.push(lixeiraRota)
+        }) 
+        console.log("respostaReserva" + respostaReserva)                   
+        res.send(respostaReserva);              
       }
     }
-    console.log(`Lixeiras reservadas ${reservas}`);
+    console.log(`Lixeiras reservadas ${reservas} + FINAL`);
     relogio[PORT - 4001] =
-      Math.max(relogio[porta - 4001], relogio_externo[porta - 4001]) + 1; //Atualiza seu relógio lógico
+    Math.max(relogio[porta - 4001], relogio_externo[porta - 4001]) + 1; //Atualiza seu relógio lógico
   });
 
   // Caminhao solicita reserva de rota
@@ -245,24 +257,44 @@ export const estacao = (host: string, porta: number) => {
       2.3  Se as demais estações não estão com as lixeiras reservadas, mas também querem reservar, a estação que recebeu a mensagem compara a marca temporal recebida com a sua própria marca temporal. Se a mensagem recebida tiver a menor marca temporal, o processo responde com um OK (200), caso contrário, essa estação ganha a disputa pela rota e avisa a estação enviando uma mensagem (400).
   */
   app.post("/reservarRota/:id", async (req, res) => {
-    atualizarRelogio();
-    const rota: string[] = req.body.rota;
-    lixeirasParaReserva.concat(rota); // Adiciona os IDs das lixeiras na lista de lixeiras que se quer reservar
+    console.log(reservas);
+    atualizarRelogio();    
+    lixeirasParaReserva = lixeirasParaReserva.concat(req.body.rota) // Adiciona os IDs das lixeiras na lista de lixeiras que se quer reservar
 
-    //Verifica com as outras estações a disponibilidade das lixeiras da rota.
-    const lixeirasReservadas = await reservarLixeiraEstacao(
+    //Verifica com as outras estações a disponibilidade das lixeiras da rota.    
+    let lixeirasReservadas = await reservarLixeiraEstacao(
       lixeirasParaReserva
     );
 
-    if (lixeirasReservadas.length > 0) {
+    // Filtra a rota para ter apenas as lixeiras dessa estação
+    let rota: string[] = [];
+    const convert : string[] = req.body.rota;    
+    req.body.rota.forEach(function(id_lixeira : string){
+        lixeiras.forEach(function(lixeira){
+            if(id_lixeira == lixeira.id)
+              rota.push(lixeira.id);
+        });
+    });
+    
+    const rotaReservada = reservas.some((r) => rota.indexOf(r) >= 0); 
+    if(!rotaReservada){
+      reservas = reservas.concat(rota);   
+      lixeirasReservadas = lixeirasReservadas.concat(rota);
+    } else{
+      rota = [];
+    }
+
+    if (lixeirasReservadas.length  != lixeirasParaReserva.length) {
       //Alguma estação já está com a lixeira reservada ou ganhou a disputa contra essa.
+      console.log("NAO PASSOU POIS O TAMANHO É DIFERENTE");
       lixeirasParaReserva = [];
-      res.send(lixeirasReservadas); //Retorna as lixeiras reservadas.
+      res.send([]); //Retorna as lixeiras reservadas
     } else {
       // Caso nenhuma nenhuma lixera esteja reservada.
-      reservas = reservas.concat(lixeirasParaReserva); // Agora as lixeiras estão reservadas.
+      console.log("PASSOU POIS O TAMANHO É IGUAL");
+      //reservas = reservas.concat(lixeirasParaReserva); // Agora as lixeiras estão reservadas.
       lixeirasParaReserva = []; // Não se quer reservar mais.
-      res.send([]); // Ok caminhão, pode usar!
+      res.send(lixeirasReservadas); // Ok caminhão, pode usar!
     }
   });
 
@@ -288,8 +320,8 @@ export const estacao = (host: string, porta: number) => {
         axios.spread((...response) => {
           for (let i = 0; i < response.length; i++) {
             respostas = respostas.concat(response[i].data);
-            console.log(response[i].status);
-            console.log(response[i].data);
+            console.log(response[i].status);            
+            console.log('resposta do response data' + response[i].data);
           }
           console.log(`Respostas ${respostas}`);
           return respostas;
